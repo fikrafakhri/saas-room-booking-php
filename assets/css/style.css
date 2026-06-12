@@ -1,0 +1,58 @@
+/* assets/css/style.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    --transition-smooth: all 0.3s ease;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: #f8f9fa;
+    color: #333;
+}
+
+/* Navbar Styling */
+.navbar-custom {
+    background: #1e293b !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Card Styling */
+.card-modern {
+    border: none;
+    border-radius: 16px;
+    background: #ffffff;
+    box-shadow: var(--card-shadow);
+    transition: var(--transition-smooth);
+}
+
+.card-modern:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+}
+
+.card-header-custom {
+    border-top-left-radius: 16px !important;
+    border-top-right-radius: 16px !important;
+    font-weight: 600;
+    padding: 1rem 1.5rem;
+}
+
+/* Button Styling */
+.btn-modern {
+    border-radius: 10px;
+    padding: 0.6rem 1.2rem;
+    font-weight: 500;
+    transition: var(--transition-smooth);
+}
+
+/* Welcome Section */
+.welcome-banner {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    border-radius: 16px;
+    padding: 2.5rem;
+    box-shadow: 0 8px 24px rgba(59, 130, 246, 0.25);
+}
