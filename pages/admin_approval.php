@@ -8,17 +8,33 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin_ruangan') {
     header("Location: ../dashboard.php");
     exit;
 }
+// Tambahkan baris ini di paling atas setelah require database:
+require_once __DIR__ . '/../helpers/log_helper.php';
 
 // Proses Update Status (Approve / Reject)
 if (isset($_GET['action']) && isset($_GET['id'])) {
     $booking_id = intval($_GET['id']);
     $action = $_GET['action'];
     $status = ($action === 'approve') ? 'approved' : 'rejected';
+    $admin_id = $_SESSION['user_id'];
 
     try {
+        // Ambil data detail booking dulu buat bahan deskripsi log
+        $stmt_detail = $pdo->prepare("SELECT b.*, r.room_name FROM bookings b JOIN rooms r ON b.room_id = r.id WHERE b.id = :id");
+        $stmt_detail->execute([':id' => $booking_id]);
+        $booking_data = $stmt_detail->fetch();
+
+        // Update status di database
         $sql = "UPDATE bookings SET status = :status WHERE id = :id";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([':status' => $status, ':id' => $booking_id]);
+
+        // EKSKUSI AUDIT TRAIL: Catat aksi admin ke log!
+        $log_action = "MANAJEMEN RESERVASI";
+        $log_desc = "Admin " . $_SESSION['username'] . " mengubah status Booking ID #" . $booking_id . " (Ruangan: " . $booking_data['room_name'] . ") menjadi " . strtoupper($status);
+        
+        writeActivityLog($pdo, $admin_id, $log_action, $log_desc);
+
         header("Location: admin_approval.php?msg=success");
         exit;
     } catch (\PDOException $e) {

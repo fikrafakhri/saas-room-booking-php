@@ -114,6 +114,9 @@ $role     = $_SESSION['role'];
                             <i class="fa-solid fa-sliders me-2"></i> Konfigurasi Ruangan
                         </a>
                     </div>
+                    <a href="pages/view_logs.php" class="btn btn-outline-danger btn-modern w-100 mt-2">
+    <i class="fa-solid fa-user-shield me-2"></i> Lihat Log Aktivitas Sistem
+</a>
                 </div>
             </div>
         <?php endif; ?>
