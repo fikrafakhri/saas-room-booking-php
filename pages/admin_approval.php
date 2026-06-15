@@ -1,6 +1,8 @@
 <?php
 // pages/admin_approval.php
 require_once __DIR__ . '/../config/database.php';
+// SUNTIKKAN FILE LOG HELPER DI SINI
+require_once __DIR__ . '/../helpers/log_helper.php';
 session_start();
 
 // PROTEKSI: Hanya Admin Ruangan yang bisa masuk
@@ -8,8 +10,6 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin_ruangan') {
     header("Location: ../dashboard.php");
     exit;
 }
-// Tambahkan baris ini di paling atas setelah require database:
-require_once __DIR__ . '/../helpers/log_helper.php';
 
 // Proses Update Status (Approve / Reject)
 if (isset($_GET['action']) && isset($_GET['id'])) {
@@ -19,7 +19,7 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
     $admin_id = $_SESSION['user_id'];
 
     try {
-        // Ambil data detail booking dulu buat bahan deskripsi log
+        // Ambil data detail booking dulu untuk bahan deskripsi log
         $stmt_detail = $pdo->prepare("SELECT b.*, r.room_name FROM bookings b JOIN rooms r ON b.room_id = r.id WHERE b.id = :id");
         $stmt_detail->execute([':id' => $booking_id]);
         $booking_data = $stmt_detail->fetch();
@@ -29,7 +29,7 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
         $stmt = $pdo->prepare($sql);
         $stmt->execute([':status' => $status, ':id' => $booking_id]);
 
-        // EKSKUSI AUDIT TRAIL: Catat aksi admin ke log!
+        // EKSKUSI AUDIT TRAIL: Catat aksi admin ke tabel log!
         $log_action = "MANAJEMEN RESERVASI";
         $log_desc = "Admin " . $_SESSION['username'] . " mengubah status Booking ID #" . $booking_id . " (Ruangan: " . $booking_data['room_name'] . ") menjadi " . strtoupper($status);
         
@@ -42,7 +42,7 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
     }
 }
 
-// Ambil semua data booking beserta nama user dan nama ruangan (Menggunakan JOIN)
+// Ambil semua data booking beserta nama user dan nama ruangan untuk tabel
 $sql_get = "SELECT b.*, u.username, r.room_name 
             FROM bookings b
             JOIN users u ON b.user_id = u.id
