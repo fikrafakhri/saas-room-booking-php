@@ -1,6 +1,8 @@
 <?php
 // pages/booking_form.php
 require_once __DIR__ . '/../config/database.php';
+// 1. SUNTIKKAN HELPER LOG DI SINI
+require_once __DIR__ . '/../helpers/log_helper.php';
 session_start();
 
 // PROTEKSI: Pastikan user sudah login
@@ -12,27 +14,26 @@ if (!isset($_SESSION['user_id'])) {
 $success = '';
 $error = '';
 
-// 1. Ambil daftar ruangan yang statusnya 'available' untuk dimasukkan ke pilihan (select option)
+// Ambil daftar ruangan yang statusnya 'available'
 $stmt_rooms = $pdo->query("SELECT * FROM rooms WHERE status = 'available' ORDER BY room_name ASC");
 $rooms = $stmt_rooms->fetchAll();
 
-// 2. Proses ketika Form di-submit oleh User
+// Proses ketika Form di-submit oleh User
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $user_id      = $_SESSION['user_id'];
     $room_id      = intval($_POST['room_id']);
     $booking_date = $_POST['booking_date'];
-    $start_time   = $_POST['start_time'] . ':00'; // Menyelaraskan format TIME (HH:MM:SS)
+    $start_time   = $_POST['start_time'] . ':00'; 
     $end_time     = $_POST['end_time'] . ':00';
     $purpose      = trim($_POST['purpose']);
 
     if ($room_id > 0 && !empty($booking_date) && !empty($start_time) && !empty($end_time) && !empty($purpose)) {
         
-        // JIKA JAM SELESAI LEBIH KECIL ATAU SAMA DENGAN JAM MULAI, TOLAK LANGSUNG
         if ($end_time <= $start_time) {
             $error = "Waktu selesai harus lebih lambat daripada waktu mulai!";
         } else {
             try {
-                // LOGIKA EMAS: Cek bentrokan waktu dengan booking lain yang sudah 'approved'
+                // Cek bentrokan waktu dengan booking lain yang sudah 'approved'
                 $sql_check = "SELECT COUNT(*) AS total FROM bookings 
                               WHERE room_id = :room_id 
                                 AND booking_date = :booking_date 
@@ -49,10 +50,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $check = $stmt_check->fetch();
 
                 if ($check['total'] > 0) {
-                    // Jika ditemukan bentrokan jadwal
                     $error = "Gagal! Ruangan tersebut sudah disetujui untuk digunakan oleh pengguna lain pada jam yang Anda pilih.";
                 } else {
-                    // Jika aman, masukkan data dengan status 'pending'
+                    // Jika aman, masukkan data ke tabel bookings
                     $sql_insert = "INSERT INTO bookings (user_id, room_id, booking_date, start_time, end_time, purpose, status) 
                                    VALUES (:user_id, :room_id, :booking_date, :start_time, :end_time, :purpose, 'pending')";
                     
@@ -65,6 +65,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ':end_time'     => $end_time,
                         ':purpose'      => $purpose
                     ]);
+
+                    // 2. AMBIL NAMA RUANGAN UNTUK BAHAN DESKRIPSI LOG
+                    $stmt_rn = $pdo->prepare("SELECT room_name FROM rooms WHERE id = :id");
+                    $stmt_rn->execute([':id' => $room_id]);
+                    $room_name = $stmt_rn->fetchColumn();
+
+                    // 3. EKSKUSI AUDIT TRAIL: Catat aktivitas user ke tabel log!
+                    $log_action = "PENGAJUAN RESERVASI";
+                    $log_desc = "User " . $_SESSION['username'] . " membuat pengajuan booking baru untuk " . $room_name . " pada tanggal " . $booking_date . " (" . $start_time . " - " . $end_time . ")";
+                    
+                    writeActivityLog($pdo, $user_id, $log_action, $log_desc);
 
                     $success = "Permintaan booking berhasil dikirim! Silakan tunggu konfirmasi/approval dari Admin.";
                 }
